@@ -1,0 +1,32 @@
+{
+  "name": "front",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm:dev:front\" \"npm:dev:server\"",
+    "dev:front": "vite --host 0.0.0.0",
+    "dev:server": "node server.js",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.1.12",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.0",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.2.0",
+    "element-plus": "^2.10.7",
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "pinia": "^3.0.3",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.12",
+    "vue": "^3.5.18",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^7.1.3"
+  }
+}
