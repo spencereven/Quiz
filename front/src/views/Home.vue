@@ -52,8 +52,9 @@ const hideAnswer = () => {
 
 <style scoped>
 .home {
-  max-width: 800px;
+  max-width: 95%; /* 设置所有页面为宽屏布局 */
   margin: 0 auto;
   padding: 20px;
+  transition: max-width 0.3s ease;
 }
 </style>

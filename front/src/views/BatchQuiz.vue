@@ -164,14 +164,9 @@ const getOptionClass = (question, optionId) => {
 }
 .question-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); /* 响应式网格 */
-  gap: 20px;
+  grid-template-columns: repeat(5, 1fr); /* 严格的五列布局 */
+  gap: 15px; /* 稍微减小间距以容纳更多卡片 */
   padding: 20px;
-}
-@media (min-width: 1200px) {
-  .question-list {
-    grid-template-columns: repeat(3, 1fr); /* 在大屏幕上严格三列 */
-  }
 }
 .question-card {
   transition: box-shadow 0.3s ease;
