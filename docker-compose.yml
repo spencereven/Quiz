@@ -13,4 +13,4 @@ services:
       - ./front/data:/app/data
     restart: always
     environment:
-      - VITE_API_BASE_URL=http://your_server_ip:3000
+      - VITE_API_BASE_URL=http://quiz-pro-front:3000
