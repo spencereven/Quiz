@@ -33,6 +33,17 @@ class QuestionModel {
       tags: JSON.parse(row.tags)
     };
   }
+  async getAllQuestions() {
+    const db = await this.db;
+    const rows = await db.all('SELECT * FROM questions');
+    return rows.map(row => ({
+      ...row,
+      options: JSON.parse(row.options),
+      correctAnswer: row.type === 'multipleChoice' ? JSON.parse(row.correctAnswer) : row.correctAnswer,
+      tags: JSON.parse(row.tags)
+    }));
+  }
+
 
   async convertTableDataToQuestions(tableData) {
     const questions = [];

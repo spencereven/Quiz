@@ -27,6 +27,7 @@ const upload = multer({
 });
 
 router.get('/question', questionController.getQuestion);
+router.get('/questions', questionController.getAllQuestions);
 router.post('/questions/upload', upload.single('file'), questionController.uploadQuestions);
 router.delete('/questions/clear', questionController.clearAllQuestions);
 

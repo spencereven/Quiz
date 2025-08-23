@@ -11,7 +11,7 @@
         <el-upload
           class="upload-area"
           drag
-          action="http://localhost:3000/api/questions/upload"
+          action="/api/questions/upload"
           :before-upload="beforeUpload"
           :on-success="handleSuccess"
           :on-error="handleError"
@@ -168,7 +168,7 @@ const clearQuestions = async () => {
     
     clearing.value = true;
     
-    const response = await fetch('http://localhost:3000/api/questions/clear', {
+    const response = await fetch('/api/questions/clear', {
       method: 'DELETE',
     });
     

@@ -313,51 +313,18 @@ const previewQuestion = (question) => {
 // 加载题库数据
 const loadQuestionsData = async () => {
   try {
-    // 直接读取 questions.json 文件
-    const response = await fetch('/questions.json');
+    const response = await fetch('/api/questions');
     if (!response.ok) {
-      throw new Error('Failed to load questions data');
+      throw new Error('Failed to load questions data from the database');
     }
     
     const data = await response.json();
+    questions.value = data;
     
-    // 转换数据格式
-    questions.value = [];
-    
-    // 处理单选题
-    if (data.categories.singleChoice) {
-      data.categories.singleChoice.questions.forEach(q => {
-        questions.value.push({
-          ...q,
-          type: 'singleChoice'
-        });
-      });
-    }
-    
-    // 处理多选题
-    if (data.categories.multipleChoice) {
-      data.categories.multipleChoice.questions.forEach(q => {
-        questions.value.push({
-          ...q,
-          type: 'multipleChoice'
-        });
-      });
-    }
-    
-    // 处理判断题
-    if (data.categories.trueFalse) {
-      data.categories.trueFalse.questions.forEach(q => {
-        questions.value.push({
-          ...q,
-          type: 'trueFalse'
-        });
-      });
-    }
-    
-    ElMessage.success('题库数据加载成功');
+    ElMessage.success(`题库数据加载成功，共 ${data.length} 条`);
   } catch (error) {
     console.error('Error loading questions data:', error);
-    ElMessage.error('题库数据加载失败');
+    ElMessage.error('从数据库加载题库数据失败');
   }
 };
 
