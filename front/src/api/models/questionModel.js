@@ -122,7 +122,19 @@ class QuestionModel {
 
   async updateQuestionsData(newData) {
     const db = await this.db;
-    const questions = newData.categories ? Object.values(newData.categories).flatMap(cat => cat.questions) : newData;
+    
+    let questions = [];
+    if (newData.categories) { // Handle old JSON structure
+      for (const type in newData.categories) {
+        const categoryQuestions = newData.categories[type].questions.map(q => ({
+          ...q,
+          type: type // Explicitly add the 'type' property
+        }));
+        questions.push(...categoryQuestions);
+      }
+    } else { // Handle new array structure from CSV/Excel
+      questions = newData;
+    }
 
     try {
       await db.run('BEGIN TRANSACTION');
