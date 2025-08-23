@@ -5,9 +5,7 @@ import { fileURLToPath } from 'url';
 class QuestionModel {
   constructor() {
     this.questionsData = null;
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    this.dataPath = path.resolve(__dirname, '../../../public', 'questions.json');
+    this.dataPath = path.resolve(process.cwd(), 'public', 'questions.json');
   }
 
   async loadQuestions() {
