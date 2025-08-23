@@ -1,52 +1,41 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { getDb } from '../database.js';
 
 class QuestionModel {
   constructor() {
-    this.questionsData = null;
-    this.dataPath = path.resolve(process.cwd(), 'public', 'questions.json');
+    this.db = getDb();
   }
 
   async loadQuestions() {
-    if (this.questionsData) {
-      return;
-    }
-    try {
-      const data = await fs.readFile(this.dataPath, 'utf-8');
-      this.questionsData = JSON.parse(data);
-    } catch (error) {
-      console.error('Error loading questions data:', error);
-      throw new Error('Failed to load questions data');
-    }
+    // No-op, data is now loaded on demand from the DB
   }
 
-  getQuestionsByType(type) {
-    if (!this.questionsData || !this.questionsData.categories[type]) {
-      return [];
-    }
-    return this.questionsData.categories[type].questions;
+  async getQuestionsByType(type) {
+    const db = await this.db;
+    const rows = await db.all('SELECT * FROM questions WHERE type = ?', type);
+    return rows.map(row => ({
+      ...row,
+      options: JSON.parse(row.options),
+      correctAnswer: row.type === 'multipleChoice' ? JSON.parse(row.correctAnswer) : row.correctAnswer,
+      tags: JSON.parse(row.tags)
+    }));
   }
 
-  getRandomQuestion(type) {
-    const questions = this.getQuestionsByType(type);
-    if (questions.length === 0) {
+  async getRandomQuestion(type) {
+    const db = await this.db;
+    const row = await db.get('SELECT * FROM questions WHERE type = ? ORDER BY RANDOM() LIMIT 1', type);
+    if (!row) {
       return null;
     }
-    const randomIndex = Math.floor(Math.random() * questions.length);
-    return questions[randomIndex];
+    return {
+      ...row,
+      options: JSON.parse(row.options),
+      correctAnswer: row.type === 'multipleChoice' ? JSON.parse(row.correctAnswer) : row.correctAnswer,
+      tags: JSON.parse(row.tags)
+    };
   }
 
   async convertTableDataToQuestions(tableData) {
-    const questions = {
-      version: "1.0.0",
-      lastUpdated: new Date().toISOString(),
-      categories: {
-        singleChoice: { name: "单选题", description: "只有一个正确答案的选择题", questions: [] },
-        multipleChoice: { name: "多选题", description: "有多个正确答案的选择题", questions: [] },
-        trueFalse: { name: "判断题", description: "判断陈述是否正确", questions: [] }
-      }
-    };
+    const questions = [];
     const errors = [];
 
     let dataRows = tableData;
@@ -60,7 +49,7 @@ class QuestionModel {
       const row = dataRows[i];
       const originalRowIndex = hasHeader ? i + 2 : i + 1;
 
-      if (row.every(cell => !cell)) continue; // 跳过完全是空的行
+      if (row.every(cell => !cell)) continue;
 
       if (row.length < 11) {
         errors.push({ row: originalRowIndex, error: "行数据不完整，必须有11列" });
@@ -108,6 +97,7 @@ class QuestionModel {
 
         const questionObj = {
           id: `${questionType.substring(0, 2)}${String(index || i).padStart(3, '0')}`,
+          type: questionType,
           question,
           options,
           correctAnswer,
@@ -117,7 +107,7 @@ class QuestionModel {
           tags: [type]
         };
         
-        questions.categories[questionType].questions.push(questionObj);
+        questions.push(questionObj);
       } catch (e) {
         errors.push({
           row: originalRowIndex,
@@ -131,129 +121,48 @@ class QuestionModel {
   }
 
   async updateQuestionsData(newData) {
+    const db = await this.db;
+    const questions = newData.categories ? Object.values(newData.categories).flatMap(cat => cat.questions) : newData;
+
     try {
-      // 首先加载现有数据
-      await this.loadQuestions();
-      
-      // 合并新旧数据
-      if (this.questionsData && newData) {
-        // 保留原有数据的基本信息
-        const mergedData = {
-          ...this.questionsData,
-          lastUpdated: new Date().toISOString(),
-          categories: {
-            singleChoice: {
-              ...this.questionsData.categories.singleChoice,
-              questions: [...this.questionsData.categories.singleChoice.questions, ...(newData.categories.singleChoice?.questions || [])]
-            },
-            multipleChoice: {
-              ...this.questionsData.categories.multipleChoice,
-              questions: [...this.questionsData.categories.multipleChoice.questions, ...(newData.categories.multipleChoice?.questions || [])]
-            },
-            trueFalse: {
-              ...this.questionsData.categories.trueFalse,
-              questions: [...this.questionsData.categories.trueFalse.questions, ...(newData.categories.trueFalse?.questions || [])]
-            }
-          }
-        };
-        
-        // 更新内存中的数据
-        this.questionsData = mergedData;
-        
-        // 写入文件
-        await fs.writeFile(this.dataPath, JSON.stringify(mergedData, null, 2), 'utf-8');
-        
-        return { success: true, message: 'Questions data updated successfully' };
-      } else if (newData) {
-        // 如果没有现有数据，直接使用新数据
-        this.questionsData = newData;
-        await fs.writeFile(this.dataPath, JSON.stringify(newData, null, 2), 'utf-8');
-        return { success: true, message: 'Questions data updated successfully' };
-      } else {
-        throw new Error('No data to update');
+      await db.run('BEGIN TRANSACTION');
+      const stmt = await db.prepare(
+        'INSERT OR REPLACE INTO questions (id, type, question, options, correctAnswer, explanation, difficulty, category, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      );
+
+      for (const q of questions) {
+        await stmt.run(
+          q.id,
+          q.type,
+          q.question,
+          JSON.stringify(q.options),
+          q.type === 'multipleChoice' ? JSON.stringify(q.correctAnswer) : q.correctAnswer,
+          q.explanation,
+          q.difficulty,
+          q.category,
+          JSON.stringify(q.tags)
+        );
       }
+
+      await stmt.finalize();
+      await db.run('COMMIT');
+      return { success: true, message: 'Questions data updated successfully' };
     } catch (error) {
+      await db.run('ROLLBACK');
       console.error('Error updating questions data:', error);
       throw new Error('Failed to update questions data');
     }
   }
 
   async clearQuestionsData() {
+    const db = await this.db;
     try {
-      // 创建空的题库数据结构
-      const emptyQuestionsData = {
-        version: "1.0.0",
-        lastUpdated: new Date().toISOString(),
-        categories: {
-          singleChoice: { name: "单选题", description: "只有一个正确答案的选择题", questions: [] },
-          multipleChoice: { name: "多选题", description: "有多个正确答案的选择题", questions: [] },
-          trueFalse: { name: "判断题", description: "判断陈述是否正确", questions: [] }
-        }
-      };
-
-      // 更新内存中的数据
-      this.questionsData = emptyQuestionsData;
-      
-      // 写入文件
-      await fs.writeFile(this.dataPath, JSON.stringify(emptyQuestionsData, null, 2), 'utf-8');
-      
+      await db.run('DELETE FROM questions');
       return { success: true, message: 'Questions data cleared successfully' };
     } catch (error) {
       console.error('Error clearing questions data:', error);
       throw new Error('Failed to clear questions data');
     }
-  }
-
-  validateQuestionsData(data) {
-    // 检查基本结构
-    if (!data || typeof data !== 'object') return false;
-    if (!data.version || !data.lastUpdated || !data.categories) return false;
-    
-    // 检查categories结构
-    const validTypes = ['singleChoice', 'multipleChoice', 'trueFalse'];
-    for (const type of validTypes) {
-      if (data.categories[type]) {
-        const category = data.categories[type];
-        if (!category.name || !Array.isArray(category.questions)) return false;
-        
-        // 检查每个题目
-        for (const question of category.questions) {
-          if (!this.validateQuestion(question, type)) return false;
-        }
-      }
-    }
-    
-    return true;
-  }
-
-  validateQuestion(question, type) {
-    // 检查必填字段
-    const requiredFields = ['id', 'question', 'options', 'correctAnswer', 'explanation', 'difficulty'];
-    for (const field of requiredFields) {
-      if (!question[field]) return false;
-    }
-    
-    // 检查options
-    if (!Array.isArray(question.options) || question.options.length < 2) return false;
-    
-    // 检查correctAnswer格式
-    if (type === 'multipleChoice') {
-      if (!Array.isArray(question.correctAnswer) || question.correctAnswer.length === 0) return false;
-    } else {
-      if (typeof question.correctAnswer !== 'string') return false;
-    }
-    
-    // 检查选项ID是否正确
-    const optionIds = question.options.map(opt => opt.id);
-    if (type === 'multipleChoice') {
-      for (const answerId of question.correctAnswer) {
-        if (!optionIds.includes(answerId)) return false;
-      }
-    } else {
-      if (!optionIds.includes(question.correctAnswer)) return false;
-    }
-    
-    return true;
   }
 }
 

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import questionRoutes from './src/api/routes/questionRoutes.js';
+import { getDb } from './src/api/database.js';
 
 const app = express();
 const port = 3000;
@@ -22,6 +23,19 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
+async function startServer() {
+  try {
+    // 确保数据库连接成功
+    await getDb();
+    console.log('Database connected successfully.');
+
+    app.listen(port, () => {
+      console.log(`Server is running on http://localhost:${port}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1); // 数据库连接失败，退出进程
+  }
+}
+
+startServer();

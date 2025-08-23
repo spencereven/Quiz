@@ -8,8 +8,7 @@ class QuestionController {
         return res.status(400).json({ error: 'Question type is required' });
       }
 
-      await questionModel.loadQuestions();
-      const question = questionModel.getRandomQuestion(type);
+      const question = await questionModel.getRandomQuestion(type);
 
       if (!question) {
         return res.status(404).json({ message: 'No questions found for the selected type' });
@@ -70,7 +69,7 @@ class QuestionController {
         return res.status(400).json({ success: false, message: 'Unsupported file format' });
       }
 
-      const totalQuestions = questionsData ? Object.values(questionsData.categories).reduce((sum, cat) => sum + cat.questions.length, 0) : 0;
+      const totalQuestions = questionsData ? questionsData.length : 0;
 
       if (totalQuestions > 0) {
         await questionModel.updateQuestionsData(questionsData);
