@@ -5,7 +5,11 @@ import { fileURLToPath } from 'url';
 class QuestionModel {
   constructor() {
     this.questionsData = null;
-    this.dataPath = path.resolve(process.cwd(), 'public', 'questions.json');
+    // 使用 import.meta.url 和 fileURLToPath 来获得更可靠的路径
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    // 从当前文件（models）向上两级到 src，然后进入 public 目录
+    this.dataPath = path.resolve(__dirname, '..', '..', 'public', 'questions.json');
   }
 
   async loadQuestions() {
