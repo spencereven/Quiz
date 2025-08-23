@@ -6,6 +6,9 @@
         <QuestionCard v-if="question" @show-answer="showAnswer" @hide-answer="hideAnswer" />
         <AnswerDisplay v-if="question" :visible="answerVisible" />
       </el-tab-pane>
+      <el-tab-pane label="批量答题" name="batchQuiz">
+        <BatchQuiz />
+      </el-tab-pane>
       <el-tab-pane label="题库导入" name="upload">
         <QuestionUploader />
       </el-tab-pane>
@@ -23,6 +26,7 @@ import QuestionCard from '../components/QuestionCard.vue';
 import AnswerDisplay from '../components/AnswerDisplay.vue';
 import QuestionUploader from '../components/QuestionUploader.vue';
 import QuestionBankViewer from '../components/QuestionBankViewer.vue';
+import BatchQuiz from './BatchQuiz.vue';
 import { useQuestionStore } from '../stores/questionStore';
 
 const activeTab = ref('quiz');

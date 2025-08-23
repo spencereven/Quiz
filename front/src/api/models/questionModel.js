@@ -44,6 +44,20 @@ class QuestionModel {
     }));
   }
 
+  async getRandomQuestions(type, count) {
+    const db = await this.db;
+    const rows = await db.all('SELECT * FROM questions WHERE type = ? ORDER BY RANDOM() LIMIT ?', [type, count]);
+    if (!rows) {
+      return [];
+    }
+    return rows.map(row => ({
+      ...row,
+      options: JSON.parse(row.options),
+      correctAnswer: row.type === 'multipleChoice' ? JSON.parse(row.correctAnswer) : row.correctAnswer,
+      tags: JSON.parse(row.tags)
+    }));
+  }
+
 
   async convertTableDataToQuestions(tableData) {
     const questions = [];

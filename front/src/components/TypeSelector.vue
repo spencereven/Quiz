@@ -21,16 +21,18 @@
       </div>
       
       <div class="button-controls">
+        <!-- 未开始轮播时 -->
         <el-button
+          v-if="!typeCarouselRunning && !selectedType"
           type="primary"
           size="large"
           @click="startTypeCarousel"
           :loading="typeCarouselLoading"
-          v-if="!typeCarouselRunning"
         >
           <i class="el-icon-video-play"></i> 开始轮播选择题型
         </el-button>
         
+        <!-- 轮播进行时 -->
         <div class="carousel-controls" v-if="typeCarouselRunning">
           <el-button
             type="success"
@@ -47,6 +49,23 @@
             <i class="el-icon-close"></i> 停止轮播
           </el-button>
         </div>
+        
+        <!-- 批量模式下，已确定题型时 -->
+        <div class="carousel-controls" v-if="props.mode === 'batch' && selectedType && !typeCarouselRunning">
+           <el-button
+             type="primary"
+             @click="emit('start-batch-quiz')"
+             size="large"
+           >
+             抽取5道题
+           </el-button>
+           <el-button
+             size="large"
+             @click="backToTypeSelection"
+           >
+             重新选择题型
+           </el-button>
+        </div>
       </div>
     </div>
     
@@ -60,6 +79,7 @@
       
       <div class="button-controls">
         <el-button
+          v-if="showFetchButton"
           type="success"
           size="large"
           @click="fetchRandomQuestion"
@@ -81,8 +101,17 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, defineProps, defineEmits } from 'vue';
 import { useQuestionStore } from '../stores/questionStore';
+
+const props = defineProps({
+  mode: {
+    type: String,
+    default: 'single' // 'single' or 'batch'
+  }
+});
+
+const emit = defineEmits(['type-selected', 'start-batch-quiz']);
 
 const selectedType = ref('');
 const questionStore = useQuestionStore();
@@ -136,8 +165,13 @@ const stopTypeCarousel = () => {
 const confirmTypeSelection = () => {
   stopTypeCarousel();
   selectedType.value = currentType.value.value;
-  // 进入下一步
-  currentStep.value = 2;
+  if (props.mode === 'batch') {
+    emit('type-selected', selectedType.value);
+    // 在批量模式下，停留在第一步，等待父组件指令
+  } else {
+    // single 模式下，进入下一步
+    currentStep.value = 2;
+  }
 };
 
 const backToTypeSelection = () => {
@@ -145,6 +179,10 @@ const backToTypeSelection = () => {
   currentStep.value = 1;
   // 清空当前题目
   questionStore.question = null;
+  if (props.mode === 'batch') {
+    emit('type-selected', null); // 重新选择时通知父组件
+  }
+  selectedType.value = ''; // 重置已选类型
 };
 
 const fetchRandomQuestion = async () => {
@@ -152,6 +190,9 @@ const fetchRandomQuestion = async () => {
   await questionStore.fetchQuestion(selectedType.value);
   questionLoading.value = false;
 };
+
+// 仅在 single 模式下显示“随机抽取题目”按钮
+const showFetchButton = computed(() => props.mode === 'single');
 </script>
 
 <style scoped>

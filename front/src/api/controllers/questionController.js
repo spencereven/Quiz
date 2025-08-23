@@ -35,6 +35,26 @@ class QuestionController {
   }
 
 
+  async getRandomQuestions(req, res) {
+    try {
+      const { type, count = 5 } = req.query;
+      if (!type) {
+        return res.status(400).json({ error: 'Question type is required' });
+      }
+
+      const questions = await questionModel.getRandomQuestions(type, parseInt(count, 10));
+
+      if (!questions || questions.length === 0) {
+        return res.status(404).json({ message: 'No questions found for the selected type' });
+      }
+
+      res.json(questions);
+    } catch (error) {
+      console.error('Error getting random questions:', error);
+      res.status(500).json({ error: 'Failed to get random questions' });
+    }
+  }
+
   async uploadQuestions(req, res) {
     try {
       if (!req.file) {
