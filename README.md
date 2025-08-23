@@ -6,6 +6,7 @@ To deploy this system using Docker, navigate to the project root directory and r
 
 ```bash
 docker-compose up -d --build
+```
 
 This command will build the necessary Docker images and start the services in detached mode.
 
