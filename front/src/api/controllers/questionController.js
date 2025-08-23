@@ -8,9 +8,13 @@ class QuestionController {
         return res.status(400).json({ error: 'Question type is required' });
       }
 
+      console.log(`[DEBUG] Attempting to fetch random question of type: ${type}`);
       const question = await questionModel.getRandomQuestion(type);
 
       if (!question) {
+        console.log(`[DEBUG] getRandomQuestion returned null. Checking all questions of type ${type}...`);
+        const allQuestions = await questionModel.getQuestionsByType(type);
+        console.log(`[DEBUG] Found ${allQuestions.length} questions in total for type ${type}.`);
         return res.status(404).json({ message: 'No questions found for the selected type' });
       }
 

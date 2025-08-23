@@ -158,6 +158,8 @@ class QuestionModel {
 
       await stmt.finalize();
       await db.run('COMMIT');
+      const changes = await db.get('SELECT total_changes() as changes');
+      console.log(`[DEBUG] Transaction committed. Total changes in this transaction: ${changes.changes}`);
       return { success: true, message: 'Questions data updated successfully' };
     } catch (error) {
       await db.run('ROLLBACK');
@@ -169,7 +171,9 @@ class QuestionModel {
   async clearQuestionsData() {
     const db = await this.db;
     try {
-      await db.run('DELETE FROM questions');
+      console.log('[DEBUG] Attempting to clear all questions...');
+      const result = await db.run('DELETE FROM questions');
+      console.log(`[DEBUG] DELETE operation finished. Rows affected: ${result.changes}`);
       return { success: true, message: 'Questions data cleared successfully' };
     } catch (error) {
       console.error('Error clearing questions data:', error);
