@@ -15,6 +15,7 @@ Once the deployment is complete, the application will be accessible on port 5173
 You can open it in your web browser using one of the following addresses:
 
 Local Access: http://localhost:5173
+
 Server Access: http://YOUR_SERVER_IP:5173 (Replace YOUR_SERVER_IP with the public IP address of your cloud server where Docker is running.)
 
 Enjoy your quiz competition! 🎉
