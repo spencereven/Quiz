@@ -1,8 +1,15 @@
+
 <template>
   <div class="question-card" v-if="question">
     <div class="question-header">
-      <el-tag :type="typeTag.type">{{ typeTag.label }}</el-tag>
-      <el-tag size="small">{{ question.difficulty }}</el-tag>
+      <div class="header-left">
+        <el-tag :type="typeTag.type">{{ typeTag.label }}</el-tag>
+        <el-tag size="small">{{ question.difficulty }}</el-tag>
+      </div>
+      <div v-if="remainingTime !== null" class="timer-display" :class="timerClass">
+       <el-icon><Timer /></el-icon>
+       <span>{{ formattedTime }}</span>
+      </div>
     </div>
 
     <div class="question-content">
@@ -74,7 +81,6 @@
         type="info"
         @click="resetSelection"
       >
-        <i class="el-icon-refresh"></i> 重新选择
       </el-button>
     </div>
   </div>
@@ -83,6 +89,14 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useQuestionStore } from '../stores/questionStore';
+import { Timer } from '@element-plus/icons-vue';
+
+const props = defineProps({
+  remainingTime: {
+    type: Number,
+    default: null
+  }
+});
 
 const emit = defineEmits(['show-answer', 'hide-answer']);
 const questionStore = useQuestionStore();
@@ -109,6 +123,23 @@ const typeTag = computed(() => {
     default:
       return { type: 'info', label: '未知' };
   }
+});
+
+const formattedTime = computed(() => {
+  if (props.remainingTime === null) return '00:00';
+  const minutes = Math.floor(props.remainingTime / 60);
+  const seconds = props.remainingTime % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+});
+
+const timerClass = computed(() => {
+  if (props.remainingTime === 0) {
+    return 'time-up';
+  }
+  if (props.remainingTime !== null && props.remainingTime <= 10) {
+    return 'low-time';
+  }
+  return '';
 });
 
 const selectedAnswer = ref('');
@@ -243,6 +274,13 @@ watch(question, (newQuestion, oldQuestion) => {
     resetSelection();
   }
 });
+
+// 监听剩余时间，时间到则自动提交
+watch(() => props.remainingTime, (newTime) => {
+  if (newTime === 0 && !hasSubmitted.value) {
+    submitAnswer();
+  }
+});
 </script>
 
 <style scoped>
@@ -257,7 +295,44 @@ watch(question, (newQuestion, oldQuestion) => {
 .question-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
+}
+
+.header-left {
+  display: flex;
+  gap: 10px;
+}
+
+.timer-display {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #606266;
+  transition: color 0.3s ease;
+}
+
+.timer-display.low-time {
+  color: #e6a23c;
+}
+
+.timer-display.time-up {
+  color: #f56c6c;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .question-content h3 {
