@@ -287,7 +287,7 @@ watch(() => props.remainingTime, (newTime) => {
 .question-card {
   background: white;
   border-radius: 12px;
-  padding: 30px;
+  padding: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   margin: 20px 0;
 }
@@ -342,12 +342,12 @@ watch(() => props.remainingTime, (newTime) => {
 }
 
 .options {
-  margin: 20px 0;
+  margin: 15px 0;
 }
 
 .option-item {
-  margin: 12px 0;
-  padding: 12px;
+  margin: 10px 0;
+  padding: 10px;
   border-radius: 8px;
   transition: all 0.3s ease;
 }
